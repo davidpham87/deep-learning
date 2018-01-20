@@ -243,6 +243,12 @@ def test_build_rnn(build_rnn):
 
 
 def test_build_nn(build_nn):
+
+    def build_cell(num_units, keep_prob):
+        lstm = tf.contrib.rnn.BasicLSTMCell(num_units)
+        drop = tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=keep_prob)
+        return drop
+
     with tf.Graph().as_default():
         test_input_data_shape = [128, 5]
         test_input_data = tf.placeholder(tf.int32, test_input_data_shape)
@@ -250,7 +256,7 @@ def test_build_nn(build_nn):
         test_embed_dim = 300
         test_rnn_layer_size = 2
         test_vocab_size = 27
-        test_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(test_rnn_size) for _ in range(test_rnn_layer_size)])
+        test_cell = rnn.MultiRNNCell([build_cell(test_rnn_size, 1.0) for _ in range(test_rnn_layer_size)])
 
         logits, final_state = build_nn(test_cell, test_rnn_size, test_input_data, test_vocab_size, test_embed_dim)
 
@@ -263,7 +269,7 @@ def test_build_nn(build_nn):
         # Check Shape
         assert logits.get_shape().as_list() == test_input_data_shape + [test_vocab_size], \
             'Outputs has wrong shape.  Found shape {}'.format(logits.get_shape())
-        assert final_state.get_shape().as_list() == [test_rnn_layer_size, 2, None, test_rnn_size], \
+        assert final_state.get_shape().as_list() == [test_rnn_layer_size, 2, test_input_data_shape[0], test_rnn_size], \
             'Final state wrong shape.  Found shape {}'.format(final_state.get_shape())
 
     _print_success_message()
